@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+require "batch_ruby"
+
+module BatchRuby
+  class FileRollback < StandardError; end
+  class BundlerCLI < Thor
+    desc "update [gem] [version]", "Update gems"
+    def update(gem = "*", version = "*")
+      File.transaction("/Users/dan2552/DryRun") do |directory|
+        all_the_gemfiles = Dir.glob(File.join(directory, "**", "Gemfile"))
+        BatchRuby::Bundler.new(all_the_gemfiles).update(gem, version)
+        raise FileRollback
+      end
+    end
+  end
+
+  class MainCLI < Thor
+    include Thor::Actions
+
+    desc "bundle [option]", "Manage many Gemfile at once"
+    subcommand "bundle", BundlerCLI
+  end
+end
+
+BatchRuby::MainCLI.start(ARGV)

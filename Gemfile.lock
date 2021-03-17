@@ -1,0 +1,26 @@
+PATH
+  remote: ../file-transaction
+  specs:
+    file-transaction (0.1.0)
+
+PATH
+  remote: .
+  specs:
+    batch_ruby (0.1.0)
+      file-transaction (~> 0.1.0)
+      thor (~> 0.20.3)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    thor (0.20.3)
+
+PLATFORMS
+  arm64-darwin-20
+
+DEPENDENCIES
+  batch_ruby!
+  file-transaction!
+
+BUNDLED WITH
+   2.2.5
