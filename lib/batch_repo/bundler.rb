@@ -11,9 +11,9 @@ module BatchRuby
     #
     def update(updated_gem = "*", version = "*")
       @updated_gem = updated_gem
+      @version = version
 
       create_new_branch_based_off_default!
-      update_gemfile!
       bundle!
       commit_and_pull_request!
     end
@@ -34,36 +34,41 @@ module BatchRuby
       end
     end
 
-    def update_gemfile!
-      return if updated_gem == "*"
-      return if version == "*"
+    # Returns true if it updated the Gemfile
+    #
+    def update_gemfile!(gemfile)
+      return false unless File.file?(gemfile)
 
-      gemfiles.each do |gemfile|
-        old_line = /(gem\s*["|']#{updated_gem}["|'],\s*sohohouse:\s*["|']#{updated_gem}["|'],\s*tag:\s*["|'])(\d.\d.\d)(["|'])/
-        new_line = '\1' + version + '\3'
-        BatchRuby::File.find_and_replace(gemfile, old_line, new_line)
-      end
+      old_line = /(gem\s*["|']#{updated_gem}["|'],\s*organisation:\s*["|']#{updated_gem}["|'],\s*tag:\s*["|'])(\d+\.\d+\.\d+)(["|'])/
+      new_line = '\1' + version + '\3'
+      BatchRuby::Files.find_and_replace(gemfile, old_line, new_line)
     end
 
     def bundle!
-      in_each_repository do
-        if updated_gem == "*" && version == "*" # if updating everything
-          system("bundle update")
-        elsif updated_gem != "*" && version == "*" # if updating one gem, but no specific version
-          system("bundle update #{updated_gem}")
-        elsif updated_gem != "*" && version != "*" # specific gem, specific version (and therefore the Gemfile should be updated)
-          system("bundle install")
-        else
-          raise "What are you doing?"
+      ::Bundler.with_unbundled_env do
+        in_each_repository do
+          if updated_gem == "*" && version == "*" # if updating everything
+            system("bundle update") || raise("Bundle failed in #{Dir.pwd}")
+          elsif updated_gem != "*" && version == "*" # if updating one gem, but no specific version
+            system("bundle update #{updated_gem}") || raise("Bundle failed in #{Dir.pwd}")
+          elsif updated_gem != "*" && version != "*" # specific gem, specific version (and therefore the Gemfile should be updated)
+            if update_gemfile!(File.join(Dir.pwd, "Gemfile"))
+              system("bundle install") || raise("Bundle failed in #{Dir.pwd}")
+            end
+          else
+            raise "What are you doing?"
+          end
         end
       end
     end
 
     def commit_and_pull_request!
       repositories.each do |repository|
-        if Git.new(repository).commit!(commit_name)
-          Git.new(repository).push!
-          Github.new(repository).open_pull_request!
+        git = Git.new(repository)
+        git.add_all
+        if git.commit(commit_name)
+          git.push
+          LocalGithubRepo.new(repository).open_pull_request!
         end
       end
     end
@@ -78,8 +83,14 @@ module BatchRuby
 
     def in_each_repository(&blk)
       repositories.each do |repository|
+        old_dir = Dir.pwd
         FileUtils.cd(repository)
-        yield
+
+        begin
+          yield
+        ensure
+          FileUtils.cd(old_dir)
+        end
       end
     end
 

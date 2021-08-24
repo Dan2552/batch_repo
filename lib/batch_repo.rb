@@ -1,0 +1,10 @@
+require "thor"
+require "irb"
+require "file-transaction"
+
+require "batch_repo/bundler"
+require "batch_repo/file"
+require "batch_repo/git"
+require "batch_repo/github"
+require "batch_repo/ruby_versions"
+require "batch_repo/version"

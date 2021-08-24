@@ -1,17 +1,18 @@
 #!/usr/bin/env ruby
 
-require "batch_ruby"
+require "batch_repo"
 
-module BatchRuby
+module BatchRepo
   class FileRollback < StandardError; end
   class BundlerCLI < Thor
     desc "update [gem] [version]", "Update gems"
     def update(gem = "*", version = "*")
-      File.transaction("/Users/dan2552/DryRun") do |directory|
+      File.transaction(Dir.pwd) do |directory|
         all_the_gemfiles = Dir.glob(File.join(directory, "**", "Gemfile"))
-        BatchRuby::Bundler.new(all_the_gemfiles).update(gem, version)
+        BatchRepo::Bundler.new(all_the_gemfiles).update(gem, version)
         raise FileRollback
       end
+    rescue FileRollback
     end
   end
 
@@ -20,7 +21,12 @@ module BatchRuby
 
     desc "bundle [option]", "Manage many Gemfile at once"
     subcommand "bundle", BundlerCLI
+
+    desc "clone all [github organisation]", "Clone all the GitHub repositories in an organisation"
+    def clone_all(organisation)
+
+    end
   end
 end
 
-BatchRuby::MainCLI.start(ARGV)
+BatchRepo::MainCLI.start(ARGV)

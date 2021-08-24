@@ -34,7 +34,7 @@ module BatchRuby
     def commit(message)
       in_repository do
         output = `git commit -m \"#{message}\"`
-        !output.include?("nothing to commit")
+        $?.exitstatus == 0 && !output.include?("nothing to commit")
       end
     end
 
@@ -45,16 +45,32 @@ module BatchRuby
     end
 
     def local_branch
-      `git rev-parse --abbrev-ref HEAD`.chomp
+      in_repository do
+        `git rev-parse --abbrev-ref HEAD`.chomp
+      end
+    end
+
+    def push
+      raise "Did you really mean to use master?" if local_branch == "master"
+
+      in_repository do
+        system("git push origin #{local_branch}")
+      end
     end
 
     private
 
-    attr_reader :repositories
+    attr_reader :repository
 
     def in_repository(&blk)
+      old_dir = Dir.pwd
       FileUtils.cd(repository)
-      yield
+
+      begin
+        yield
+      ensure
+        FileUtils.cd(old_dir)
+      end
     end
   end
 end

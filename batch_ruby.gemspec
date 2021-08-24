@@ -1,16 +1,16 @@
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "batch_ruby/version"
+require "batch_repo/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "batch_ruby"
+  spec.name          = "batch_repo"
   spec.version       = BatchRuby::VERSION
   spec.authors       = ["Daniel Inkpen"]
   spec.email         = ["dan2552@gmail.com"]
 
   spec.summary       = ""
   spec.description   = ""
-  spec.homepage      = "https://github.com/Dan2552/batch_ruby"
+  spec.homepage      = "https://github.com/Dan2552/batch_repo"
   spec.license       = "MIT"
 
   # Specify which files should be added to the gem when it is released.
@@ -23,6 +23,6 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "file-transaction", "~> 0.1.0"
-  spec.add_dependency "thor", "~> 0.20.3"
+  spec.add_dependency "file-transaction", "~> 1.0.0"
+  spec.add_dependency "thor", "~> 1.1.0"
 end
