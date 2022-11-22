@@ -4,7 +4,7 @@ require "batch_repo/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "batch_repo"
-  spec.version       = BatchRuby::VERSION
+  spec.version       = BatchRepo::VERSION
   spec.authors       = ["Daniel Inkpen"]
   spec.email         = ["dan2552@gmail.com"]
 

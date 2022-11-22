@@ -26,6 +26,17 @@ module BatchRepo
     def clone_all(organisation)
 
     end
+
+    def find_and_replace(original, replacement, file_matcher = "**/*")
+      File.transaction(Dir.pwd) do |directory|
+        files = Dir.glob(File.join(directory, file_matcher)
+        find_and_replace = BatchRepo::FindAndReplace.new(files)
+        find_and_replace.replace(original, replacement)
+        find_and_replace.open_pull_requests!(dry_run: true)
+        raise FileRollback
+      end
+    rescue FileRollback
+    end
   end
 end
 

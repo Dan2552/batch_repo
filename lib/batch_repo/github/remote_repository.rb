@@ -1,6 +1,6 @@
-module BatchRuby
+module BatchRepo
   module GitHub
-    class Repo
+    class RemoteRepository
       def self.where(type: "all", per_page: 999, page: 0)
         query = {
           type: type,

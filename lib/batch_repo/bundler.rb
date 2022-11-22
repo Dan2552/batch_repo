@@ -1,6 +1,4 @@
-require "pathname"
-
-module BatchRuby
+module BatchRepo
   class Bundler
     def initialize(gemfiles)
       @gemfiles = Array(gemfiles)
@@ -41,7 +39,7 @@ module BatchRuby
 
       old_line = /(gem\s*["|']#{updated_gem}["|'],\s*organisation:\s*["|']#{updated_gem}["|'],\s*tag:\s*["|'])(\d+\.\d+\.\d+)(["|'])/
       new_line = '\1' + version + '\3'
-      BatchRuby::Files.find_and_replace(gemfile, old_line, new_line)
+      BatchRepo::Files.find_and_replace(gemfile, old_line, new_line)
     end
 
     def bundle!

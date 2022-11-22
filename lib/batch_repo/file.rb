@@ -1,4 +1,4 @@
-module BatchRuby
+module BatchRepo
   module Files
     def self.find_and_replace(path, old, new)
       text = File.read(path)

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    batch_ruby (0.1.0)
+    batch_repo (0.1.0)
       file-transaction (~> 1.0.0)
       thor (~> 1.1.0)
 
@@ -15,7 +15,7 @@ PLATFORMS
   arm64-darwin-20
 
 DEPENDENCIES
-  batch_ruby!
+  batch_repo!
 
 BUNDLED WITH
    2.2.24
