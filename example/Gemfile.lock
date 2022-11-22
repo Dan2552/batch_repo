@@ -1,10 +1,9 @@
 PATH
-  remote: .
+  remote: ..
   specs:
     batch_repo (0.1.0)
 
 GEM
-  remote: https://rubygems.org/
   specs:
 
 PLATFORMS
@@ -14,4 +13,4 @@ DEPENDENCIES
   batch_repo!
 
 BUNDLED WITH
-   2.2.24
+   2.3.4

@@ -22,7 +22,4 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-
-  spec.add_dependency "file-transaction", "~> 1.0.0"
-  spec.add_dependency "thor", "~> 1.1.0"
 end

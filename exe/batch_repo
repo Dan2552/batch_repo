@@ -2,42 +2,59 @@
 
 require "batch_repo"
 
-module BatchRepo
-  class FileRollback < StandardError; end
-  class BundlerCLI < Thor
-    desc "update [gem] [version]", "Update gems"
-    def update(gem = "*", version = "*")
-      File.transaction(Dir.pwd) do |directory|
-        all_the_gemfiles = Dir.glob(File.join(directory, "**", "Gemfile"))
-        BatchRepo::Bundler.new(all_the_gemfiles).update(gem, version)
-        raise FileRollback
-      end
-    rescue FileRollback
-    end
-  end
+ENV["BATCH_REPO_ROOT"] ||= Dir.pwd
+ENV["DRY_RUN"] ||= "true" if ARGV.include?("--dry-run")
+ENV["DRY_RUN"] = "true" if ENV["DRY_RUN"] == "1"
+ENV["VERBOSE"] ||= "true" if ARGV.include?("--verbose")
+ENV["VERBOSE"] = "true" if ENV["VERBOSE"] == "1"
 
-  class MainCLI < Thor
-    include Thor::Actions
+puts "DRY RUN MODE" if ENV["DRY_RUN"] == "true"
+puts "VERBOSE MODE" if ENV["VERBOSE"] == "true"
 
-    desc "bundle [option]", "Manage many Gemfile at once"
-    subcommand "bundle", BundlerCLI
+def summary
+  output = <<~OUTPUT
+    Usage:
+      #{BatchRepo::DecoratedString.new("batch_repo clone [organisation]").bold}
 
-    desc "clone all [github organisation]", "Clone all the GitHub repositories in an organisation"
-    def clone_all(organisation)
+        Where [organisation] is the org in which to clone all repositories from
 
-    end
+      #{BatchRepo::DecoratedString.new("batch_repo update [script]").bold}
 
-    def find_and_replace(original, replacement, file_matcher = "**/*")
-      File.transaction(Dir.pwd) do |directory|
-        files = Dir.glob(File.join(directory, file_matcher)
-        find_and_replace = BatchRepo::FindAndReplace.new(files)
-        find_and_replace.replace(original, replacement)
-        find_and_replace.open_pull_requests!(dry_run: true)
-        raise FileRollback
-      end
-    rescue FileRollback
-    end
-  end
+        Where [script] will be run agaisnt many repositories. It's recommended
+        to run this in a separate directory to where you'd normally work on
+        repositories. By default it'll clone a new copy to `./repos/*`.
+
+        Note: This is a destructive action. It will force push to the target
+        branch.
+
+        The script file needs the following methods defined in a class called
+        `Update`:
+        * `run_on_each_repo` - the operation you want to perform on each repo
+        * `branch` - the branch name (`String`)
+        * `commit_message` - the commit message (`String`)
+        * `repos` - the list of repositories (`Array` of `String` elements) that
+          the script will actually be run agaisnt
+
+        Optional arguments:
+        * --verbose
+        * --dry-run
+  OUTPUT
+  puts output
+  exit 1
 end
 
-BatchRepo::MainCLI.start(ARGV)
+begin
+  case ARGV[0]
+  when "clone"
+    puts "TODO"
+  when "update"
+    update = BatchRepo::Update.new(ARGV[1])
+    summary unless update.valid?
+    update.run
+  else
+    summary
+  end
+rescue Interrupt
+  STDERR.puts "Cancelled"
+  exit 1
+end
