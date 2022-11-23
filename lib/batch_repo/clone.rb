@@ -85,7 +85,7 @@ module BatchRepo
     def auth
       @auth ||= begin
         return ENV["GITHUB_AUTH"] if ENV["GITHUB_AUTH"]
-        user, pass = Security.find_or_create("batch_repo_github")
+        user, pass = Security.find_or_create("GitHub - https://api.github.com")
         Base64.strict_encode64([user, pass].join(":"))
       end
     end

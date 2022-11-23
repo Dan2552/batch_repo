@@ -5,11 +5,11 @@ module Security
   end
 
   def self.get_keychain_password(account_name)
-    `security find-generic-password -gs #{account_name} 2>&1 >/dev/null | ruby -e 'print $1 if STDIN.gets =~ /^password: "(.*)"$/'`.strip
+    `security find-generic-password -gs "#{account_name}" 2>&1 >/dev/null | ruby -e 'print $1 if STDIN.gets =~ /^password: "(.*)"$/'`.strip
   end
 
   def self.get_keychain_username(account_name)
-    `security find-generic-password -gs #{account_name} 2>/dev/null | grep '"acct"' | grep '=' | ruby -e 'print $1 if STDIN.gets =~ /"acct".*="(.*)"$/'`.strip
+    `security find-generic-password -gs "#{account_name}" 2>/dev/null | grep '"acct"' | grep '=' | ruby -e 'print $1 if STDIN.gets =~ /"acct".*="(.*)"$/'`.strip
   end
 
   def self.find_or_create(account_name)
