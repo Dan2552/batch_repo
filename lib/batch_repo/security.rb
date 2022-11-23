@@ -1,6 +1,6 @@
 module Security
   def self.set_keychain_password(account_name, username, password)
-    system("security add-generic-password -s #{account_name} -a \"#{username}\" -w \"#{password}\" -U") ||
+    system("security add-generic-password -s \"#{account_name}\" -a \"#{username}\" -w \"#{password}\" -U") ||
       raise("Failed to save password in keychain.")
   end
 
