@@ -1,1 +1,3 @@
+source "https://rubygems.org"
+
 gem "batch_repo", path: "../"

@@ -1,5 +1,9 @@
 #
-# Run with `bundle exec batch_repo update example.rb`
+# cd to this directory and run:
+# ```
+# bundle install
+# bundle exec batch_repo update example.rb --dry-run
+# ```
 #
 
 class Update

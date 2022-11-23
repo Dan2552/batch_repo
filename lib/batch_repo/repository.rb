@@ -1,104 +1,132 @@
-class Repository
-  def initialize(org_and_repo)
-    @org, @repo = org_and_repo.split("/")
-  end
+module BatchRepo
+  class Repository
+    def initialize(org_and_repo, path: nil, parent_path: nil)
+      @org, @repo = org_and_repo.split("/")
 
-  def find_and_replace(path, original, replacement)
-    text = File.read(path)
-    replace = text.gsub(original, replacement)
-    if text != replace
-      File.open(path, 'w') { |file| file.puts(replace) }
-    end
-  end
-
-  def clone_repo
-    return if File.directory?(path)
-
-    root = ENV["BATCH_REPO_ROOT"] || Bundler.root
-    repos_path = File.join(root, "repos")
-    FileUtils.mkdir_p(repos_path)
-    FileUtils.cd(repos_path)
-    if ENV["VERBOSE"] == "true"
-      system("git clone https://github.com/#{org}/#{repo}.git") || fail!
-    else
-      system("git clone https://github.com/#{org}/#{repo}.git >/dev/null 2>&1") || fail!
-    end
-  end
-
-  def make_a_new_branch(branch_name)
-    root = ENV["BATCH_REPO_ROOT"] || Bundler.root
-    repos_path = File.join(root, "repos")
-    unless File.directory?(File.join(repos_path, "gathering-of-scripts"))
-      Repository.new("Dan2552/gathering-of-scripts").clone_repo
+      if path && parent_path
+        raise "path and parent_path should be exclusive options"
+      elsif path
+        @path = path
+      elsif parent_path
+        @path = File.join(parent_path, @repo)
+      else
+        raise "path or parent_path must be specified"
+      end
     end
 
-    branch = File.join(repos_path, "gathering-of-scripts", "git", "branch")
+    attr_accessor :path
 
-    cd_to_repo
-    if ENV["VERBOSE"] == "true"
-      system("#{branch} master --prefer=remote --discard=true") || fail!
-      system("#{branch} #{branch_name} --prefer=remote --discard=true ") || fail!
-    else
-      system("#{branch} master --prefer=remote --discard=true >/dev/null 2>&1") || fail!
-      system("#{branch} #{branch_name} --prefer=remote --discard=true >/dev/null 2>&1") || fail!
-    end
-    system("git reset --hard origin/master >/dev/null")
-  end
-
-  def publish(branch_name)
-    cd_to_repo
-    fail! if branch_name == "master"
-    fail! if branch_name.nil?
-    fail! if branch_name.length == 0
-
-    system("git push -u origin #{branch_name} --force")
-  end
-
-  def open_pr
-    root = ENV["BATCH_REPO_ROOT"] || Bundler.root
-    repos_path = File.join(root, "repos")
-    unless File.directory?(File.join(repos_path, "gathering-of-scripts"))
-      Repository.new("Dan2552/gathering-of-scripts").clone_repo
+    def name
+      @repo
     end
 
-    open_pr_bin = File.join(repos_path, "gathering-of-scripts", "github", "open-pr")
+    def clone_repo
+      success = true
 
-    cd_to_repo
-    system("#{open_pr_bin} master")
-  end
+      return if File.directory?(File.join(path, ".git"))
 
-  def commit(message)
-    cd_to_repo
-    system("git add .")
-    system("git commit -a -m \"#{message}\" >/dev/null") || (system("git status") && fail!)
-  end
+      success = false
 
-  def amend
-    cd_to_repo
-    system("git add .")
-    system("git commit --amend")
-  end
+      FileUtils.rm_rf(path)
+      FileUtils.mkdir_p(parent_path)
 
-  def path
-    root = ENV["BATCH_REPO_ROOT"] || Bundler.root
-    File.join(root, "repos", name)
-  end
+      if ENV["VERBOSE"] == "true"
+        system("cd #{parent_path} && git clone https://github.com/#{org}/#{repo}.git") || fail!("Failed to clone")
+      else
+        system("cd #{parent_path} && git clone https://github.com/#{org}/#{repo}.git >/dev/null 2>&1") || fail!("Failed to clone")
+      end
 
-  def name
-    repo.split("/").last
-  end
+      success = true
+    ensure
+      FileUtils.rm_rf(path) if success == false
+    end
 
-  private
+    def switch_to_remote_main!
+      clone_repo
 
-  attr_reader :repo
-  attr_reader :org
+      branch = File.join(gathering_path, "git", "branch")
 
-  def fail!
-    STDERR.puts "Failed"
-    exit 1
-  end
+      success = false
 
-  def cd_to_repo
-    FileUtils.cd(path)
+      system("cd #{path} && git remote prune origin >/dev/null 2>/dev/null")
+
+      if ENV["VERBOSE"] == "true"
+        system("cd #{path} && #{branch} #{main_branch_name} --prefer=remote --discard=true") || fail!("Failed to switch to #{main_branch_name}")
+      else
+        system("cd #{path} && #{branch} #{main_branch_name} --prefer=remote --discard=true >/dev/null 2>&1") || fail!("Failed to switch to #{main_branch_name}")
+      end
+    end
+
+    def make_a_new_branch(branch_name)
+      branch_bin = File.join(gathering_path, "git", "branch")
+
+      switch_to_remote_main!
+
+      if ENV["VERBOSE"] == "true"
+        system("cd #{path} && #{branch_bin} #{branch_name} --prefer=remote --discard=true") || fail!("Failed to switch to #{branch_name}")
+        system("cd #{path} && git reset --hard origin/#{main_branch_name}")
+      else
+        system("cd #{path} && #{branch_bin} #{branch_name} --prefer=remote --discard=true >/dev/null 2>&1") || fail!("Failed to switch to #{branch_name}")
+        system("cd #{path} && git reset --hard origin/#{main_branch_name} >/dev/null")
+      end
+    end
+
+    def publish(branch_name)
+      fail! if branch_name == "#{main_branch_name}"
+      fail! if branch_name.nil?
+      fail! if branch_name.length == 0
+
+      system("cd #{path} && git push -u origin #{branch_name} --force")
+    end
+
+    def open_pr
+      open_pr_bin = File.join(gathering_path, "github", "open-pr")
+      system("cd #{path} && #{open_pr_bin} #{main_branch_name}")
+    end
+
+    def commit(message)
+      system("cd #{path} && git add .")
+      system("cd #{path} && git commit -a -m \"#{message}\" >/dev/null") || (system("cd #{path} && git status") && fail!)
+    end
+
+    private
+
+    SEMAPHORE = Mutex.new
+
+    attr_reader :repo
+    attr_reader :org
+
+    def fail!(message = nil)
+      prefix = "#{org}/#{repo} (#{path}): "
+      message ||= "Failed"
+      STDERR.puts(prefix + message)
+      exit 1
+    end
+
+    def parent_path
+      File.expand_path(File.join(path, ".."))
+    end
+
+    def gathering_path
+      path = File.join("/tmp", "gathering-of-scripts")
+
+      SEMAPHORE.synchronize do
+        unless File.directory?(path)
+          Repository.new("Dan2552/gathering-of-scripts", path: path).clone_repo
+        end
+      end
+
+      path
+    end
+
+    def main_branch_name
+      original = Dir.pwd
+      FileUtils.cd(path)
+      name = `basename $(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null) 2>/dev/null`.chomp.strip
+      name = "master" if name.length == 0
+      name
+    ensure
+      FileUtils.cd(original)
+    end
   end
 end

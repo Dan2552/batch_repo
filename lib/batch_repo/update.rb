@@ -27,8 +27,9 @@ module BatchRepo
 
     def run
       repos = update.repos
+      parent_path = ENV["BATCH_REPO_ROOT"]
 
-      repos.map { |repo| Repository.new(repo) }.each do |repo|
+      repos.map { |repo| Repository.new(repo, parent_path: parent_path) }.each do |repo|
         puts DecoratedString.new("-------- #{repo.name} --------").bg_blue
 
         puts DecoratedString.new("cloning").bold.bg_cyan
@@ -101,7 +102,7 @@ module BatchRepo
           verbose_puts("loading absolute: #{@script_file}")
           require @script_file
         else
-          relative = File.join(ENV["BATCH_REPO_ROOT"] || Bundler.root, @script_file)
+          relative = File.join(Dir.pwd, @script_file)
           verbose_puts("loading relative: #{relative}")
 
           require_relative relative

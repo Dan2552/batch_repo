@@ -2,21 +2,38 @@
 
 require "batch_repo"
 
-ENV["BATCH_REPO_ROOT"] ||= Dir.pwd
+ENV["BATCH_REPO_ROOT"] ||= File.join(Dir.pwd, "repos")
 ENV["DRY_RUN"] ||= "true" if ARGV.include?("--dry-run")
 ENV["DRY_RUN"] = "true" if ENV["DRY_RUN"] == "1"
 ENV["VERBOSE"] ||= "true" if ARGV.include?("--verbose")
 ENV["VERBOSE"] = "true" if ENV["VERBOSE"] == "1"
-
-puts "DRY RUN MODE" if ENV["DRY_RUN"] == "true"
-puts "VERBOSE MODE" if ENV["VERBOSE"] == "true"
+ENV["PULL_LATEST"] ||= "true" if ARGV.include?("--pull-latest")
+ENV["PULL_LATEST"] = "true" if ENV["PULL_LATEST"] == "1"
+ENV["THREAD_COUNT"] ||= "50"
+ENV["MAX_GITHUB_PAGES"] ||= "300"
+ENV["REAUTH_BATCH_REPO"] = "true" if ENV["REAUTH_BATCH_REPO"] == "1"
+ARGV.delete("--pull-latest")
+ARGV.delete("--verbose")
+ARGV.delete("--dry-run")
 
 def summary
   output = <<~OUTPUT
     Usage:
-      #{BatchRepo::DecoratedString.new("batch_repo clone [organisation]").bold}
+      #{BatchRepo::DecoratedString.new("batch_repo clone [organisation] [directory] [archived_directory]").bold}
 
-        Where [organisation] is the org in which to clone all repositories from
+        Where [organisation] is the GitHub org in which to clone all
+        repositories from (that you have permission to pull at least!).
+
+        The [directory] specifies where they should be cloned to, each
+        repository will be cloned to its own child directory within it.
+
+        [archived_directory] is optional. By default archived repositories wont
+        be cloned. If you supply this, they will be to the specified directory.
+        This can, but doesn't have to be, the same value as [directory].
+
+        Optional arguments:
+        * --verbose
+        * --pull-latest - destructively sets the main branch to match remote
 
       #{BatchRepo::DecoratedString.new("batch_repo update [script]").bold}
 
@@ -46,7 +63,9 @@ end
 begin
   case ARGV[0]
   when "clone"
-    puts "TODO"
+    summary unless ARGV[1]
+    summary unless ARGV[2]
+    BatchRepo::Clone.new.run(ARGV[1], ARGV[2], ARGV[3])
   when "update"
     update = BatchRepo::Update.new(ARGV[1])
     summary unless update.valid?
