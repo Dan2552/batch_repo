@@ -44,29 +44,25 @@ module BatchRepo
     def switch_to_remote_main!
       clone_repo
 
-      branch = File.join(gathering_path, "git", "branch")
-
       success = false
 
       system("cd #{path} && git remote prune origin >/dev/null 2>/dev/null")
 
       if ENV["VERBOSE"] == "true"
-        system("cd #{path} && #{branch} #{main_branch_name} --prefer=remote --discard=true") || fail!("Failed to switch to #{main_branch_name}")
+        Branch.switch(main_branch_name, path: path) || fail!("Failed to switch to #{main_branch_name}")
       else
-        system("cd #{path} && #{branch} #{main_branch_name} --prefer=remote --discard=true >/dev/null 2>&1") || fail!("Failed to switch to #{main_branch_name}")
+        Branch.switch(main_branch_name, path: path) || fail!("Failed to switch to #{main_branch_name}")
       end
     end
 
     def make_a_new_branch(branch_name)
-      branch_bin = File.join(gathering_path, "git", "branch")
-
       switch_to_remote_main!
 
       if ENV["VERBOSE"] == "true"
-        system("cd #{path} && #{branch_bin} #{branch_name} --prefer=remote --discard=true") || fail!("Failed to switch to #{branch_name}")
+        Branch.switch(branch_name, path: path) || fail!("Failed to switch to #{branch_name}")
         system("cd #{path} && git reset --hard origin/#{main_branch_name}")
       else
-        system("cd #{path} && #{branch_bin} #{branch_name} --prefer=remote --discard=true >/dev/null 2>&1") || fail!("Failed to switch to #{branch_name}")
+        Branch.switch(branch_name, path: path) || fail!("Failed to switch to #{branch_name}")
         system("cd #{path} && git reset --hard origin/#{main_branch_name} >/dev/null")
       end
     end

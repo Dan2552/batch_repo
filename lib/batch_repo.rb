@@ -6,6 +6,7 @@ require "net/http"
 require "base64"
 require "io/console"
 
+require "batch_repo/branch"
 require "batch_repo/repository"
 require "batch_repo/update"
 require "batch_repo/clone"
